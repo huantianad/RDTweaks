@@ -9,6 +9,11 @@
 - do tihs
 - rn
 
+## TODO
+- make startup tweaks better
+- maybe randomizer animation? kinda hard tho
+- CLS folders?
+
 ## Installation
 1. Download the latest version of BepInEx 5 **x86** [here](https://github.com/BepInEx/BepInEx/releases).
 2. Unzip the file into your RD folder. You should have a `winhttp.dll`, `doorstop_config.ini`, and `BepInEx` folder next to Rhythm Doctor.exe.
