@@ -23,8 +23,8 @@
 **Make sure you use the x86 version!** RD is x86 so the x64 version of BepInEx will not work.
 2. Unzip the file into your RD folder. You should have a `winhttp.dll`, `doorstop_config.ini`, and `BepInEx` folder next to Rhythm Doctor.exe.
 3. Launch RD once to generate BepInEx files.
-4. Download the latest version of the mod from [here](https://github.com/huantianad/RDTweaks/releases).
-5. Put the mod into the `BepInEx/Plugins` folder.
+4. Download the latest version of the mod from [here](https://github.com/huantianad/RDTweaks/releases). It should be named `RDTweaks vx.x.x.zip`.
+5. Unzip the file you downloaded into your Rhythm Doctor installation folder. You should now have a file at `BepInEx/Plugins/RDTweaks/RDTweaks.dll`.
 6. Launch the game, and configure the mod in `BepInEx/Config`.
 
 For more information, check out the [BepInEx installation guide](https://docs.bepinex.dev/articles/user_guide/installation/index.html).
