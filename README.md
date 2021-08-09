@@ -15,6 +15,8 @@
 - make startup tweaks better
 - maybe randomizer animation? kinda hard tho
 - CLS folders?
+- Maybe samurai
+- Remove Herobrine
 
 ## Installation
 1. Download the latest version of BepInEx 5 **x86** [here](https://github.com/BepInEx/BepInEx/releases).
