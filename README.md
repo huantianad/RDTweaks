@@ -19,7 +19,8 @@
 - Remove Herobrine
 
 ## Installation
-1. Download the latest version of BepInEx 5 **x86** [here](https://github.com/BepInEx/BepInEx/releases).
+1. Download the latest version of BepInEx 5 **x86** [here](https://github.com/BepInEx/BepInEx/releases).\
+**Make sure you use the x86 version!** RD is x86 so the x64 version of BepInEx will not work.
 2. Unzip the file into your RD folder. You should have a `winhttp.dll`, `doorstop_config.ini`, and `BepInEx` folder next to Rhythm Doctor.exe.
 3. Launch RD once to generate BepInEx files.
 4. Download the latest version of the mod from [here](https://github.com/huantianad/RDTweaks/releases).
