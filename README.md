@@ -3,11 +3,13 @@
 
 
 ## Features
-- too
-- lazy
-- to 
-- do tihs
-- rn
+- Skip warning on startup, or skip directly to CLS
+- Skip the logo screen on the title screen
+- CLS random level (push R)
+- Never import levles? well skip to the library section of CLS when you enter it!
+- Geeze writing this is kinda hard I'll polish this later
+- I'll probably add more features soontm but uhh 
+  - coding hard
 
 ## TODO
 - make startup tweaks better
