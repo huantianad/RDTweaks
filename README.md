@@ -1,6 +1,8 @@
 # RDTweaks
 *A [BepInEx](https://github.com/BepInEx/BepInEx) plugin which contains a collection of tweaks for RD.*
 
+Still a big work in progress!
+
 
 ## Features
 - Skip warning on startup, or skip directly to CLS
