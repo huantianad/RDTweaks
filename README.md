@@ -9,6 +9,7 @@ Still a big work in progress!
 - Skip the logo screen on the title screen
 - CLS random level (push R)
 - Never import levles? well skip to the library section of CLS when you enter it!
+- Automatically swap P1 and P2 so P1 is on the left like a sane person.
 - Geeze writing this is kinda hard I'll polish this later
 - I'll probably add more features soontm but uhh 
   - coding hard
