@@ -183,16 +183,7 @@ namespace RDTweaks
             [HarmonyPatch(typeof(scnCLS), "Update")]
             public static bool Prefix(scnCLS __instance)
             {
-                // Copied from scnCLS.Update()
-                if (!__instance.CanReceiveInput || __instance.levelDetail.showingErrorsContainer ||
-                    __instance.levelImporter.Showing || __instance.dialog.gameObject.activeInHierarchy
-                    // || Time.frameCount == StandaloneFileBrowser.lastFrameCount
-                    )
-                {
-                    return true;
-                }
-                else if (!(bool)Traverse.Create(__instance).Field("canSelectLevel").GetValue()
-                         || __instance.SelectedLevel || __instance.ShowingWard)
+                if (!CanSelectLevel(__instance))
                 {
                     return true;
                 }
@@ -216,25 +207,15 @@ namespace RDTweaks
             [HarmonyPatch(typeof(scnCLS), "Update")]
             public static bool Prefix(scnCLS __instance)
             {
-                // Copied from scnCLS.Update()
-                if (!__instance.CanReceiveInput || __instance.levelDetail.showingErrorsContainer ||
-                    __instance.levelImporter.Showing || __instance.dialog.gameObject.activeInHierarchy
-                    // || Time.frameCount == StandaloneFileBrowser.lastFrameCount
-                    )
-                {
-                    return true;
-                }
-                else if (!(bool)Traverse.Create(__instance).Field("canSelectLevel").GetValue()
-                         || __instance.SelectedLevel|| __instance.ShowingWard)
+                if (!CanSelectLevel(__instance))
                 {
                     return true;
                 }
 
-                var scroll = Input.GetAxis("Mouse ScrollWheel");
-
-                if (scroll != 0)
+                var scrolling = Input.GetAxis("Mouse ScrollWheel");
+                if (scrolling != 0f)
                 {
-                    int direction = scroll < 0f ? 1 : -1;
+                    int direction = scrolling < 0f ? 1 : -1;
                     int total = __instance.levelDetail.CurrentLevelsData.Count;
                     int nextLocation = __instance.CurrentLevelIndex + direction;
 
@@ -248,6 +229,8 @@ namespace RDTweaks
                     }
 
                     GoToLevel(__instance, nextLocation);
+
+                    return false;
                 }
 
                 return true;
@@ -275,6 +258,22 @@ namespace RDTweaks
             rdbase.StartCoroutine(__instance.sendLevelDataToLevelDetailCoroutine);
             Traverse.Create(__instance).Method("ToggleScrollbar", true, false).GetValue();
             Traverse.Create(__instance).Method("ToggleScrollbar", false, false).GetValue();
+        }
+
+        public static bool CanSelectLevel(scnCLS scnCLS)
+        {
+            // Copied from scnCLS.Update()
+            if (!scnCLS.CanReceiveInput || scnCLS.levelDetail.showingErrorsContainer ||
+                scnCLS.levelImporter.Showing || scnCLS.dialog.gameObject.activeInHierarchy ||
+                // Time.frameCount == StandaloneFileBrowser.lastFrameCount
+                // I made this part
+                !(bool)Traverse.Create(scnCLS).Field("canSelectLevel").GetValue() ||
+                scnCLS.SelectedLevel || scnCLS.ShowingWard)
+            {
+                return false;
+            }
+
+            return true;
         }
     }
 }
