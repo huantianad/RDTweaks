@@ -5,21 +5,24 @@ Still a big work in progress!
 
 
 ## Features
-- Skip warning on startup, or skip directly to CLS
-- Skip the logo screen on the title screen
-- CLS random level (push R)
-- Never import levles? well skip to the library section of CLS when you enter it!
+- Skip to main menu, editor, or CLS on startup.
+- Skip to main menu, past the logo.
+- CLS level randomizer (default key: R)
+- Skip to CLS library when entering.
+- Scroll wheen in CLS!
 - Automatically swap P1 and P2 so P1 is on the left like a sane person.
 - Geeze writing this is kinda hard I'll polish this later
 - I'll probably add more features soontm but uhh 
   - coding hard
 
 ## TODO
-- make startup tweaks better
-- maybe randomizer animation? kinda hard tho
+- Make startup tweaks not load warning scene for a frame.
+- Animations for CLS actions (scrolling, randomizing).
 - CLS folders?
 - Maybe samurai
 - Remove Herobrine
+- A better readme.
+- Better comments for config.
 
 ## Installation
 1. Download the latest version of BepInEx 5 **x86** [here](https://github.com/BepInEx/BepInEx/releases).\
