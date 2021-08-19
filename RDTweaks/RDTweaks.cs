@@ -15,9 +15,13 @@ namespace RDTweaks
     public class RDTweaks : BaseUnityPlugin
     {
         private ConfigEntry<SkipLocation> SkipOnStartupTo;
+
         private ConfigEntry<bool> configSkipTitle;
+
+        private ConfigEntry<bool> configCLSScrollWheel;
         private ConfigEntry<bool> configCLSRandom;
         private ConfigEntry<bool> configSkipToLibrary;
+
         private ConfigEntry<bool> configSwapP1P2;
 
         enum SkipLocation
@@ -36,6 +40,8 @@ namespace RDTweaks
                                               "Where to skip to on startup, i.e. skip the warning text, skipping to CLS.");
             configSkipTitle = customFile.Bind("MainMenu", "SkipLogo",  false,
                                               "Whether or not to skip the logo screen and go directly to the main menu.");
+            configCLSScrollWheel = customFile.Bind("CLS", "ScrollWheel", false,
+                                                   "Whether or not to enable using scroll wheel to scroll in CLS.");
             configCLSRandom = customFile.Bind("CLS", "EnableRandom", false,
                                               "Whether or not to enable random level selector in CLS.");
             configSkipToLibrary = customFile.Bind("CLS", "SkipToLibrary", false,
@@ -61,6 +67,10 @@ namespace RDTweaks
                 Harmony.CreateAndPatchAll(typeof(skipLogo), "dev.huantiain.rdtweaks.skipLogo");
             }
 
+            if (configCLSScrollWheel.Value)
+            {
+                Harmony.CreateAndPatchAll(typeof(CLSScrollWheel), "dev.huantiain.rdtweaks.CLSScrollWheel");
+            }
             if (configCLSRandom.Value)
             {
                 Harmony.CreateAndPatchAll(typeof(CLSRandom), "dev.huantiain.rdtweaks.CLSRandom");
@@ -74,6 +84,7 @@ namespace RDTweaks
             {
                 Harmony.CreateAndPatchAll(typeof(swapP1P2), "dev.huantiain.rdtweaks.swapP1P2");
             }
+
             Logger.LogMessage("Loaded!");
         }
 
@@ -117,7 +128,7 @@ namespace RDTweaks
             [HarmonyPatch(typeof(scnMenu), "Start")]
             public static void Postfix(scnMenu __instance)
             {
-                scnMenu rdbase = (scnMenu) Traverse.Create(__instance).Field("_instance").GetValue();
+                scnMenu rdbase = (scnMenu)Traverse.Create(__instance).Field("_instance").GetValue();
                 rdbase.StartCoroutine(GoToMain(__instance));
             }
 
@@ -126,7 +137,7 @@ namespace RDTweaks
                 AccessTools.Method(__instance.GetType(), "GoToSection").Invoke(__instance, new object[] { 1 });
 
                 // Make sure the arrow doesn't get stuck on the side.
-                while ((bool) Traverse.Create(__instance).Field("changingSection").GetValue())
+                while ((bool)Traverse.Create(__instance).Field("changingSection").GetValue())
                 {
                     Traverse.Create(__instance).Method("HighlightOption", 0, false, false).GetValue();
                     yield return null;
@@ -180,8 +191,8 @@ namespace RDTweaks
                 {
                     return true;
                 }
-                else if (!(bool)Traverse.Create(__instance).Field("canSelectLevel").GetValue() || __instance.SelectedLevel
-                    || __instance.ShowingWard)
+                else if (!(bool)Traverse.Create(__instance).Field("canSelectLevel").GetValue()
+                         || __instance.SelectedLevel || __instance.ShowingWard)
                 {
                     return true;
                 }
@@ -197,30 +208,73 @@ namespace RDTweaks
 
                 return true;
             }
+        }
 
-            public static void GoToLevel(scnCLS __instance, int index)
+        public class CLSScrollWheel
+        {
+            [HarmonyPrefix]
+            [HarmonyPatch(typeof(scnCLS), "Update")]
+            public static bool Prefix(scnCLS __instance)
             {
-                scnCLS rdbase = (scnCLS) Traverse.Create(__instance).Field("_instance").GetValue();
-
-                //Copied from scnCLS.ChangeManyLevels()
-                rdbase.StopCoroutine(__instance.sendLevelDataToLevelDetailCoroutine);
-                rdbase.StopCoroutine(__instance.playLevelPreviewAudioClipCoroutine);
-                __instance.previewSongPlayer.Stop(0f);
-
-                __instance.ShowSyringes(__instance.levelDetail.CurrentLevelsData, index, false);
-                foreach (CustomLevel customLevel in __instance.visibleLevels)
+                // Copied from scnCLS.Update()
+                if (!__instance.CanReceiveInput || __instance.levelDetail.showingErrorsContainer ||
+                    __instance.levelImporter.Showing || __instance.dialog.gameObject.activeInHierarchy
+                    // || Time.frameCount == StandaloneFileBrowser.lastFrameCount
+                    )
                 {
-                    bool flag = customLevel == __instance.CurrentLevel;
-                    customLevel.PlayPlungerIdle(flag);
-                    customLevel.ToggleSyringUsb(flag, false);
-                    customLevel.FadeOverlay(flag, true);
+                    return true;
+                }
+                else if (!(bool)Traverse.Create(__instance).Field("canSelectLevel").GetValue()
+                         || __instance.SelectedLevel|| __instance.ShowingWard)
+                {
+                    return true;
                 }
 
-                __instance.sendLevelDataToLevelDetailCoroutine = __instance.SendLevelDataToLevelDetail(false, 0f);
-                rdbase.StartCoroutine(__instance.sendLevelDataToLevelDetailCoroutine);
-                Traverse.Create(__instance).Method("ToggleScrollbar", true, false).GetValue();
-                Traverse.Create(__instance).Method("ToggleScrollbar", false, false).GetValue();
+                var scroll = Input.GetAxis("Mouse ScrollWheel");
+
+                if (scroll != 0)
+                {
+                    int direction = scroll < 0f ? 1 : -1;
+                    int total = __instance.levelDetail.CurrentLevelsData.Count;
+                    int nextLocation = __instance.CurrentLevelIndex + direction;
+
+                    if (nextLocation > total - 1)
+                    {
+                        nextLocation = 0;
+                    }
+                    else if (nextLocation < 0)
+                    {
+                        nextLocation = total - 1;
+                    }
+
+                    GoToLevel(__instance, nextLocation);
+                }
+
+                return true;
             }
+        }
+        public static void GoToLevel(scnCLS __instance, int index)
+        {
+            scnCLS rdbase = (scnCLS)Traverse.Create(__instance).Field("_instance").GetValue();
+
+            //Copied from scnCLS.ChangeManyLevels()
+            rdbase.StopCoroutine(__instance.sendLevelDataToLevelDetailCoroutine);
+            rdbase.StopCoroutine(__instance.playLevelPreviewAudioClipCoroutine);
+            __instance.previewSongPlayer.Stop(0f);
+
+            __instance.ShowSyringes(__instance.levelDetail.CurrentLevelsData, index, false);
+            foreach (CustomLevel customLevel in __instance.visibleLevels)
+            {
+                bool flag = customLevel == __instance.CurrentLevel;
+                customLevel.PlayPlungerIdle(flag);
+                customLevel.ToggleSyringUsb(flag, false);
+                customLevel.FadeOverlay(flag, true);
+            }
+
+            __instance.sendLevelDataToLevelDetailCoroutine = __instance.SendLevelDataToLevelDetail(false, 0f);
+            rdbase.StartCoroutine(__instance.sendLevelDataToLevelDetailCoroutine);
+            Traverse.Create(__instance).Method("ToggleScrollbar", true, false).GetValue();
+            Traverse.Create(__instance).Method("ToggleScrollbar", false, false).GetValue();
         }
     }
 }
