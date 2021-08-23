@@ -73,6 +73,6 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="Copy" AfterTargets="Build">
-    <Copy SourceFiles="$(OutputPath)$(AssemblyName).dll" DestinationFolder="Z:/"/>
+    <Copy SourceFiles="$(OutputPath)$(AssemblyName).dll" DestinationFolder="/home/huantian/.steam/steam/steamapps/common/Rhythm Doctor/BepInEx/plugins/RDTweaks/"/>
   </Target>
 </Project>

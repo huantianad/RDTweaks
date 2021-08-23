@@ -51,42 +51,42 @@ namespace RDTweaks
 
             if (configSkipOnStartupTo.Value != SkipLocation.Disabled)
             {
-                Harmony.CreateAndPatchAll(typeof(SkipWarning), "dev.huantiain.rdtweaks.skipWarning");
+                Harmony.CreateAndPatchAll(typeof(SkipWarning), "dev.huantian.rdtweaks.skipWarning");
                 switch (configSkipOnStartupTo.Value)
                 {
                     case SkipLocation.CLS:
-                        Harmony.CreateAndPatchAll(typeof(SkipToCLS), "dev.huantiain.rdtweaks.skipToCLS");
+                        Harmony.CreateAndPatchAll(typeof(SkipToCLS), "dev.huantian.rdtweaks.skipToCLS");
                         break;
                     case SkipLocation.Editor:
-                        Harmony.CreateAndPatchAll(typeof(SkipToEditor), "dev.huantiain.rdtweaks.skipToEditor");
+                        Harmony.CreateAndPatchAll(typeof(SkipToEditor), "dev.huantian.rdtweaks.skipToEditor");
                         break;
                 }
             }
 
             if (configSkipTitle.Value)
             {
-                Harmony.CreateAndPatchAll(typeof(SkipLogo), "dev.huantiain.rdtweaks.skipLogo");
+                Harmony.CreateAndPatchAll(typeof(SkipLogo), "dev.huantian.rdtweaks.skipLogo");
             }
 
             if (configCLSScrollWheel.Value)
             {
-                Harmony.CreateAndPatchAll(typeof(CLSScrollWheel), "dev.huantiain.rdtweaks.CLSScrollWheel");
+                Harmony.CreateAndPatchAll(typeof(CLSScrollWheel), "dev.huantian.rdtweaks.CLSScrollWheel");
             }
             if (configCLSRandom.Value)
             {
-                Harmony.CreateAndPatchAll(typeof(CLSRandom), "dev.huantiain.rdtweaks.CLSRandom");
+                Harmony.CreateAndPatchAll(typeof(CLSRandom), "dev.huantian.rdtweaks.CLSRandom");
             }
             if (configSkipToLibrary.Value)
             {
-                Harmony.CreateAndPatchAll(typeof(SkipToLibrary), "dev.huantiain.rdtweaks.skipToLibrary");
+                Harmony.CreateAndPatchAll(typeof(SkipToLibrary), "dev.huantian.rdtweaks.skipToLibrary");
             }
 
             if (configSwapP1P2.Value)
             {
-                Harmony.CreateAndPatchAll(typeof(SwapP1P2), "dev.huantiain.rdtweaks.swapP1P2");
+                Harmony.CreateAndPatchAll(typeof(SwapP1P2), "dev.huantian.rdtweaks.swapP1P2");
             }
 
-            //Harmony.CreateAndPatchAll(typeof(unwrapAll), "dev.huantiain.rdtweaks.unwrapAll");
+            //Harmony.CreateAndPatchAll(typeof(unwrapAll), "dev.huantian.rdtweaks.unwrapAll");
 
 
             Logger.LogMessage("Loaded!");
