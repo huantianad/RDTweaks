@@ -85,6 +85,9 @@ namespace RDTweaks
                 Harmony.CreateAndPatchAll(typeof(swapP1P2), "dev.huantiain.rdtweaks.swapP1P2");
             }
 
+            //Harmony.CreateAndPatchAll(typeof(unwrapAll), "dev.huantiain.rdtweaks.unwrapAll");
+
+
             Logger.LogMessage("Loaded!");
         }
 
@@ -104,7 +107,8 @@ namespace RDTweaks
             static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
             {
                 return new CodeMatcher(instructions)
-                    .MatchForward(false, new CodeMatch(OpCodes.Call, AccessTools.Method(typeof(scnBase), "GoToMainMenu")))
+                    .MatchForward(false,
+                        new CodeMatch(OpCodes.Call, AccessTools.Method(typeof(scnBase), "GoToMainMenu")))
                     .SetOperandAndAdvance(AccessTools.Method(typeof(scnBase), "GoToCustomLevelSelect"))
                     .InstructionEnumeration();
             }
@@ -116,7 +120,8 @@ namespace RDTweaks
             static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
             {
                 return new CodeMatcher(instructions)
-                    .MatchForward(false, new CodeMatch(OpCodes.Call, AccessTools.Method(typeof(scnBase), "GoToMainMenu")))
+                    .MatchForward(false,
+                        new CodeMatch(OpCodes.Call, AccessTools.Method(typeof(scnBase), "GoToMainMenu")))
                     .SetOperandAndAdvance(AccessTools.Method(typeof(scnBase), "GoToLevelEditor"))
                     .InstructionEnumeration();
             }
@@ -151,6 +156,7 @@ namespace RDTweaks
             [HarmonyPatch(typeof(RDInput), "Setup")]
             public static void Postfix()
             {
+                // Copied from RDInput.SwapP1AndP2Controls()
                 RDInput.p1.SwapSchemeIndex();
                 RDInput.p1Default.SwapSchemeIndex();
                 RDInput.p2.SwapSchemeIndex();
@@ -169,11 +175,33 @@ namespace RDTweaks
                 scnCLS rdbase = (scnCLS)Traverse.Create(__instance).Field("_instance").GetValue();
 
                 // Copied from scnCLS.SelectWardOption()
-                if (SteamIntegration.initialized)
-                {
-                    SteamWorkshop.ClearItemsInfoCache();
-                }
+                if (SteamIntegration.initialized) SteamWorkshop.ClearItemsInfoCache();
                 rdbase.StartCoroutine(__instance.LoadLevelsData(-1f));
+            }
+        }
+
+        public static class unwrapAll
+        {
+            [HarmonyPostfix]
+            [HarmonyPatch(typeof(scnCLS), "Start")]
+            public static void Postfix(scnCLS __instance)
+            {
+                scnCLS rdbase = (scnCLS)Traverse.Create(__instance).Field("_instance").GetValue();
+                rdbase.StartCoroutine(Test(__instance));
+            }
+
+            public static IEnumerator Test(scnCLS __instance)
+            {
+                foreach (CustomLevelData levelData in __instance.levelDetail.CurrentLevelsData)
+                {
+                    //Debug.Log(levelData.tags);
+                    if (Persistence.GetCustomLevelRank(levelData.Hash, 1f) == -3)
+                    {
+                        Debug.Log("hi");
+                        Persistence.SetCustomLevelRank(levelData.Hash, -1, 1f);
+                    }
+                }
+                yield break;
             }
         }
 
@@ -183,16 +211,13 @@ namespace RDTweaks
             [HarmonyPatch(typeof(scnCLS), "Update")]
             public static bool Prefix(scnCLS __instance)
             {
-                if (!CanSelectLevel(__instance))
-                {
-                    return true;
-                }
+                if (!CanSelectLevel(__instance)) return true;
 
                 if (Input.GetKeyDown(KeyCode.R))
                 {
                     var rand = new System.Random();
                     int total = __instance.levelDetail.CurrentLevelsData.Count;
-                    GoToLevel(__instance, rand.Next(0, total));
+                    GoToLevel(__instance, rand.Next(total));
 
                     return false;
                 }
@@ -207,10 +232,7 @@ namespace RDTweaks
             [HarmonyPatch(typeof(scnCLS), "Update")]
             public static bool Prefix(scnCLS __instance)
             {
-                if (!CanSelectLevel(__instance))
-                {
-                    return true;
-                }
+                if (!CanSelectLevel(__instance)) return true;
 
                 var scrolling = Input.GetAxis("Mouse ScrollWheel");
                 if (scrolling != 0f)
@@ -219,14 +241,8 @@ namespace RDTweaks
                     int total = __instance.levelDetail.CurrentLevelsData.Count;
                     int nextLocation = __instance.CurrentLevelIndex + direction;
 
-                    if (nextLocation > total - 1)
-                    {
-                        nextLocation = 0;
-                    }
-                    else if (nextLocation < 0)
-                    {
-                        nextLocation = total - 1;
-                    }
+                    if (nextLocation > total - 1) nextLocation = 0;
+                    else if (nextLocation < 0) nextLocation = total - 1;
 
                     GoToLevel(__instance, nextLocation);
 
@@ -260,15 +276,14 @@ namespace RDTweaks
             Traverse.Create(__instance).Method("ToggleScrollbar", false, false).GetValue();
         }
 
-        public static bool CanSelectLevel(scnCLS scnCLS)
+        public static bool CanSelectLevel(scnCLS __instance)
         {
             // Copied from scnCLS.Update()
-            if (!scnCLS.CanReceiveInput || scnCLS.levelDetail.showingErrorsContainer ||
-                scnCLS.levelImporter.Showing || scnCLS.dialog.gameObject.activeInHierarchy ||
+            if (!__instance.CanReceiveInput || __instance.levelDetail.showingErrorsContainer ||
+                __instance.levelImporter.Showing || __instance.dialog.gameObject.activeInHierarchy ||
                 // Time.frameCount == StandaloneFileBrowser.lastFrameCount
-                // I made this part
-                !(bool)Traverse.Create(scnCLS).Field("canSelectLevel").GetValue() ||
-                scnCLS.SelectedLevel || scnCLS.ShowingWard)
+                !(bool)Traverse.Create(__instance).Field("canSelectLevel").GetValue() ||
+                __instance.SelectedLevel || __instance.ShowingWard)
             {
                 return false;
             }
