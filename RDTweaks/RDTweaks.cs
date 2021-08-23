@@ -14,7 +14,7 @@ namespace RDTweaks
     [BepInProcess("Rhythm Doctor.exe")]
     public class RDTweaks : BaseUnityPlugin
     {
-        private ConfigEntry<SkipLocation> SkipOnStartupTo;
+        private ConfigEntry<SkipLocation> configSkipOnStartupTo;
 
         private ConfigEntry<bool> configSkipTitle;
 
@@ -24,7 +24,7 @@ namespace RDTweaks
 
         private ConfigEntry<bool> configSwapP1P2;
 
-        enum SkipLocation
+        private enum SkipLocation
         {
             Disabled,
             MainMenu,
@@ -33,10 +33,10 @@ namespace RDTweaks
         }
 
         // Awake is called once when both the game and the plug-in are loaded
-        void Awake()
+        public void Awake()
         {
             var customFile = new ConfigFile(Path.Combine(Paths.ConfigPath, "RDTweaks.cfg"), true);
-            SkipOnStartupTo = customFile.Bind("Startup", "SkipOnStartupTo", SkipLocation.Disabled,
+            configSkipOnStartupTo = customFile.Bind("Startup", "SkipOnStartupTo", SkipLocation.Disabled,
                                               "Where to skip to on startup, i.e. skip the warning text, skipping to CLS.");
             configSkipTitle = customFile.Bind("MainMenu", "SkipLogo",  false,
                                               "Whether or not to skip the logo screen and go directly to the main menu.");
@@ -49,22 +49,23 @@ namespace RDTweaks
             configSwapP1P2 = customFile.Bind("Gameplay", "SwapP1P2", false,
                                              "Whether or not to automatically swap P1 and P2, so P1 is on the left.");
 
-            if (SkipOnStartupTo.Value != SkipLocation.Disabled)
+            if (configSkipOnStartupTo.Value != SkipLocation.Disabled)
             {
-                Harmony.CreateAndPatchAll(typeof(skipWarning), "dev.huantiain.rdtweaks.skipWarning");
-                if (SkipOnStartupTo.Value == SkipLocation.CLS)
+                Harmony.CreateAndPatchAll(typeof(SkipWarning), "dev.huantiain.rdtweaks.skipWarning");
+                switch (configSkipOnStartupTo.Value)
                 {
-                    Harmony.CreateAndPatchAll(typeof(skipToCLS), "dev.huantiain.rdtweaks.skipToCLS");
-                }
-                else if (SkipOnStartupTo.Value == SkipLocation.Editor)
-                {
-                    Harmony.CreateAndPatchAll(typeof(skipToEditor), "dev.huantiain.rdtweaks.skipToEditor");
+                    case SkipLocation.CLS:
+                        Harmony.CreateAndPatchAll(typeof(SkipToCLS), "dev.huantiain.rdtweaks.skipToCLS");
+                        break;
+                    case SkipLocation.Editor:
+                        Harmony.CreateAndPatchAll(typeof(SkipToEditor), "dev.huantiain.rdtweaks.skipToEditor");
+                        break;
                 }
             }
 
             if (configSkipTitle.Value)
             {
-                Harmony.CreateAndPatchAll(typeof(skipLogo), "dev.huantiain.rdtweaks.skipLogo");
+                Harmony.CreateAndPatchAll(typeof(SkipLogo), "dev.huantiain.rdtweaks.skipLogo");
             }
 
             if (configCLSScrollWheel.Value)
@@ -77,12 +78,12 @@ namespace RDTweaks
             }
             if (configSkipToLibrary.Value)
             {
-                Harmony.CreateAndPatchAll(typeof(skipToLibrary), "dev.huantiain.rdtweaks.skipToLibrary");
+                Harmony.CreateAndPatchAll(typeof(SkipToLibrary), "dev.huantiain.rdtweaks.skipToLibrary");
             }
 
             if (configSwapP1P2.Value)
             {
-                Harmony.CreateAndPatchAll(typeof(swapP1P2), "dev.huantiain.rdtweaks.swapP1P2");
+                Harmony.CreateAndPatchAll(typeof(SwapP1P2), "dev.huantiain.rdtweaks.swapP1P2");
             }
 
             //Harmony.CreateAndPatchAll(typeof(unwrapAll), "dev.huantiain.rdtweaks.unwrapAll");
@@ -91,7 +92,7 @@ namespace RDTweaks
             Logger.LogMessage("Loaded!");
         }
 
-        public static class skipWarning
+        public static class SkipWarning
         {
             [HarmonyPostfix]
             [HarmonyPatch(typeof(scnLogo), "Start")]
@@ -101,10 +102,10 @@ namespace RDTweaks
             }
         }
 
-        public static class skipToCLS
+        public static class SkipToCLS
         {
             [HarmonyPatch(typeof(scnLogo), "Exit")]
-            static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+            public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
             {
                 return new CodeMatcher(instructions)
                     .MatchForward(false,
@@ -114,10 +115,10 @@ namespace RDTweaks
             }
         }
 
-        public static class skipToEditor
+        public static class SkipToEditor
         {
             [HarmonyPatch(typeof(scnLogo), "Exit")]
-            static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+            public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
             {
                 return new CodeMatcher(instructions)
                     .MatchForward(false,
@@ -127,13 +128,13 @@ namespace RDTweaks
             }
         }
 
-        public static class skipLogo
+        public static class SkipLogo
         {
             [HarmonyPostfix]
             [HarmonyPatch(typeof(scnMenu), "Start")]
             public static void Postfix(scnMenu __instance)
             {
-                scnMenu rdbase = (scnMenu)Traverse.Create(__instance).Field("_instance").GetValue();
+                var rdbase = (scnMenu)Traverse.Create(__instance).Field("_instance").GetValue();
                 rdbase.StartCoroutine(GoToMain(__instance));
             }
 
@@ -150,7 +151,7 @@ namespace RDTweaks
             }
         }
 
-        public static class swapP1P2
+        public static class SwapP1P2
         {
             [HarmonyPostfix]
             [HarmonyPatch(typeof(RDInput), "Setup")]
@@ -166,13 +167,13 @@ namespace RDTweaks
             }
         }
 
-        public static class skipToLibrary
+        public static class SkipToLibrary
         {
             [HarmonyPostfix]
             [HarmonyPatch(typeof(scnCLS), "Start")]
             public static void Postfix(scnCLS __instance)
             {
-                scnCLS rdbase = (scnCLS)Traverse.Create(__instance).Field("_instance").GetValue();
+                var rdbase = (scnCLS)Traverse.Create(__instance).Field("_instance").GetValue();
 
                 // Copied from scnCLS.SelectWardOption()
                 if (SteamIntegration.initialized) SteamWorkshop.ClearItemsInfoCache();
@@ -186,7 +187,7 @@ namespace RDTweaks
             [HarmonyPatch(typeof(scnCLS), "Start")]
             public static void Postfix(scnCLS __instance)
             {
-                scnCLS rdbase = (scnCLS)Traverse.Create(__instance).Field("_instance").GetValue();
+                var rdbase = (scnCLS)Traverse.Create(__instance).Field("_instance").GetValue();
                 rdbase.StartCoroutine(Test(__instance));
             }
 
@@ -211,18 +212,15 @@ namespace RDTweaks
             [HarmonyPatch(typeof(scnCLS), "Update")]
             public static bool Prefix(scnCLS __instance)
             {
-                if (!CanSelectLevel(__instance)) return true;
+                if (!CanSelectLevel(__instance)) return true;  // Not in right place
 
-                if (Input.GetKeyDown(KeyCode.R))
-                {
-                    var rand = new System.Random();
-                    int total = __instance.levelDetail.CurrentLevelsData.Count;
-                    GoToLevel(__instance, rand.Next(total));
+                if (!Input.GetKeyDown(KeyCode.R)) return true;  // Not pressing R
+                
+                var rand = new System.Random();
+                var total = __instance.levelDetail.CurrentLevelsData.Count;
+                GoToLevel(__instance, rand.Next(total));
 
-                    return false;
-                }
-
-                return true;
+                return false;
             }
         }
 
@@ -232,29 +230,26 @@ namespace RDTweaks
             [HarmonyPatch(typeof(scnCLS), "Update")]
             public static bool Prefix(scnCLS __instance)
             {
-                if (!CanSelectLevel(__instance)) return true;
+                if (!CanSelectLevel(__instance)) return true; // Not in right place
 
                 var scrolling = Input.GetAxis("Mouse ScrollWheel");
-                if (scrolling != 0f)
-                {
-                    int direction = scrolling < 0f ? 1 : -1;
-                    int total = __instance.levelDetail.CurrentLevelsData.Count;
-                    int nextLocation = __instance.CurrentLevelIndex + direction;
+                if (scrolling == 0f) return true;  // They aren't scrolling
+                
+                var direction = scrolling < 0f ? 1 : -1;
+                var total = __instance.levelDetail.CurrentLevelsData.Count;
+                var nextLocation = __instance.CurrentLevelIndex + direction;
 
-                    if (nextLocation > total - 1) nextLocation = 0;
-                    else if (nextLocation < 0) nextLocation = total - 1;
+                if (nextLocation > total - 1) nextLocation = 0;
+                else if (nextLocation < 0) nextLocation = total - 1;
 
-                    GoToLevel(__instance, nextLocation);
+                GoToLevel(__instance, nextLocation);
 
-                    return false;
-                }
-
-                return true;
+                return false;
             }
         }
-        public static void GoToLevel(scnCLS __instance, int index)
+        private static void GoToLevel(scnCLS __instance, int index)
         {
-            scnCLS rdbase = (scnCLS)Traverse.Create(__instance).Field("_instance").GetValue();
+            var rdbase = (scnCLS)Traverse.Create(__instance).Field("_instance").GetValue();
 
             //Copied from scnCLS.ChangeManyLevels()
             rdbase.StopCoroutine(__instance.sendLevelDataToLevelDetailCoroutine);
@@ -262,9 +257,9 @@ namespace RDTweaks
             __instance.previewSongPlayer.Stop(0f);
 
             __instance.ShowSyringes(__instance.levelDetail.CurrentLevelsData, index, false);
-            foreach (CustomLevel customLevel in __instance.visibleLevels)
+            foreach (var customLevel in __instance.visibleLevels)
             {
-                bool flag = customLevel == __instance.CurrentLevel;
+                var flag = customLevel == __instance.CurrentLevel;
                 customLevel.PlayPlungerIdle(flag);
                 customLevel.ToggleSyringUsb(flag, false);
                 customLevel.FadeOverlay(flag, true);
@@ -279,16 +274,11 @@ namespace RDTweaks
         public static bool CanSelectLevel(scnCLS __instance)
         {
             // Copied from scnCLS.Update()
-            if (!__instance.CanReceiveInput || __instance.levelDetail.showingErrorsContainer ||
-                __instance.levelImporter.Showing || __instance.dialog.gameObject.activeInHierarchy ||
-                // Time.frameCount == StandaloneFileBrowser.lastFrameCount
-                !(bool)Traverse.Create(__instance).Field("canSelectLevel").GetValue() ||
-                __instance.SelectedLevel || __instance.ShowingWard)
-            {
-                return false;
-            }
-
-            return true;
+            return __instance.CanReceiveInput && !__instance.levelDetail.showingErrorsContainer 
+                && !__instance.levelImporter.Showing && !__instance.dialog.gameObject.activeInHierarchy
+                // Custom ones to only be true when they're in the scrolling syrnge section.
+                && (bool)Traverse.Create(__instance).Field("canSelectLevel").GetValue()
+                && !__instance.SelectedLevel && !__instance.ShowingWard;
         }
     }
 }
