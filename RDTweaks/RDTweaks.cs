@@ -86,12 +86,10 @@ namespace RDTweaks
                 Harmony.CreateAndPatchAll(typeof(SwapP1P2), "dev.huantian.rdtweaks.swapP1P2");
             }
 
-            //Harmony.CreateAndPatchAll(typeof(unwrapAll), "dev.huantian.rdtweaks.unwrapAll");
-
+            // Harmony.CreateAndPatchAll(typeof(UnwrapAll), "dev.huantian.rdtweaks.unwrapAll");
 
             Logger.LogMessage("Loaded!");
         }
-
         public static class SkipWarning
         {
             [HarmonyPostfix]
@@ -134,11 +132,11 @@ namespace RDTweaks
             [HarmonyPatch(typeof(scnMenu), "Start")]
             public static void Postfix(scnMenu __instance)
             {
-                var rdbase = (scnMenu)Traverse.Create(__instance).Field("_instance").GetValue();
-                rdbase.StartCoroutine(GoToMain(__instance));
+                var rdBase = (scnMenu)Traverse.Create(__instance).Field("_instance").GetValue();
+                rdBase.StartCoroutine(GoToMain(__instance));
             }
 
-            public static IEnumerator GoToMain(scnMenu __instance)
+            private static IEnumerator GoToMain(scnMenu __instance)
             {
                 AccessTools.Method(__instance.GetType(), "GoToSection").Invoke(__instance, new object[] { 1 });
 
@@ -162,8 +160,8 @@ namespace RDTweaks
                 RDInput.p1Default.SwapSchemeIndex();
                 RDInput.p2.SwapSchemeIndex();
                 RDInput.p2Default.SwapSchemeIndex();
-                GC.PanP1 = ((RDInput.p1.schemeIndex == 0) ? 1f : -1f);
-                GC.PanP2 = ((RDInput.p2.schemeIndex == 0) ? 1f : -1f);
+                GC.PanP1 = (RDInput.p1.schemeIndex == 0) ? 1f : -1f;
+                GC.PanP2 = (RDInput.p2.schemeIndex == 0) ? 1f : -1f;
             }
         }
 
@@ -173,27 +171,27 @@ namespace RDTweaks
             [HarmonyPatch(typeof(scnCLS), "Start")]
             public static void Postfix(scnCLS __instance)
             {
-                var rdbase = (scnCLS)Traverse.Create(__instance).Field("_instance").GetValue();
+                var rdBase = (scnCLS)Traverse.Create(__instance).Field("_instance").GetValue();
 
                 // Copied from scnCLS.SelectWardOption()
                 if (SteamIntegration.initialized) SteamWorkshop.ClearItemsInfoCache();
-                rdbase.StartCoroutine(__instance.LoadLevelsData(-1f));
+                rdBase.StartCoroutine(__instance.LoadLevelsData(-1f));
             }
         }
 
-        public static class unwrapAll
+        public static class UnwrapAll
         {
             [HarmonyPostfix]
             [HarmonyPatch(typeof(scnCLS), "Start")]
             public static void Postfix(scnCLS __instance)
             {
-                var rdbase = (scnCLS)Traverse.Create(__instance).Field("_instance").GetValue();
-                rdbase.StartCoroutine(Test(__instance));
+                var rdBase = (scnCLS)Traverse.Create(__instance).Field("_instance").GetValue();
+                rdBase.StartCoroutine(Test(__instance));
             }
 
-            public static IEnumerator Test(scnCLS __instance)
+            private static IEnumerator Test(scnCLS __instance)
             {
-                foreach (CustomLevelData levelData in __instance.levelDetail.CurrentLevelsData)
+                foreach (var levelData in __instance.levelDetail.CurrentLevelsData)
                 {
                     //Debug.Log(levelData.tags);
                     if (Persistence.GetCustomLevelRank(levelData.Hash, 1f) == -3)
@@ -215,7 +213,7 @@ namespace RDTweaks
                 if (!CanSelectLevel(__instance)) return true;  // Not in right place
 
                 if (!Input.GetKeyDown(KeyCode.R)) return true;  // Not pressing R
-                
+
                 var rand = new System.Random();
                 var total = __instance.levelDetail.CurrentLevelsData.Count;
                 GoToLevel(__instance, rand.Next(total));
@@ -234,7 +232,7 @@ namespace RDTweaks
 
                 var scrolling = Input.GetAxis("Mouse ScrollWheel");
                 if (scrolling == 0f) return true;  // They aren't scrolling
-                
+
                 var direction = scrolling < 0f ? 1 : -1;
                 var total = __instance.levelDetail.CurrentLevelsData.Count;
                 var nextLocation = __instance.CurrentLevelIndex + direction;
@@ -249,11 +247,11 @@ namespace RDTweaks
         }
         private static void GoToLevel(scnCLS __instance, int index)
         {
-            var rdbase = (scnCLS)Traverse.Create(__instance).Field("_instance").GetValue();
+            var rdBase = (scnCLS)Traverse.Create(__instance).Field("_instance").GetValue();
 
             //Copied from scnCLS.ChangeManyLevels()
-            rdbase.StopCoroutine(__instance.sendLevelDataToLevelDetailCoroutine);
-            rdbase.StopCoroutine(__instance.playLevelPreviewAudioClipCoroutine);
+            rdBase.StopCoroutine(__instance.sendLevelDataToLevelDetailCoroutine);
+            rdBase.StopCoroutine(__instance.playLevelPreviewAudioClipCoroutine);
             __instance.previewSongPlayer.Stop(0f);
 
             __instance.ShowSyringes(__instance.levelDetail.CurrentLevelsData, index, false);
@@ -266,17 +264,17 @@ namespace RDTweaks
             }
 
             __instance.sendLevelDataToLevelDetailCoroutine = __instance.SendLevelDataToLevelDetail(false, 0f);
-            rdbase.StartCoroutine(__instance.sendLevelDataToLevelDetailCoroutine);
+            rdBase.StartCoroutine(__instance.sendLevelDataToLevelDetailCoroutine);
             Traverse.Create(__instance).Method("ToggleScrollbar", true, false).GetValue();
             Traverse.Create(__instance).Method("ToggleScrollbar", false, false).GetValue();
         }
 
-        public static bool CanSelectLevel(scnCLS __instance)
+        private static bool CanSelectLevel(scnCLS __instance)
         {
             // Copied from scnCLS.Update()
-            return __instance.CanReceiveInput && !__instance.levelDetail.showingErrorsContainer 
+            return __instance.CanReceiveInput && !__instance.levelDetail.showingErrorsContainer
                 && !__instance.levelImporter.Showing && !__instance.dialog.gameObject.activeInHierarchy
-                // Custom ones to only be true when they're in the scrolling syrnge section.
+                // Custom ones to only be true when they're in the scrolling syringe section.
                 && (bool)Traverse.Create(__instance).Field("canSelectLevel").GetValue()
                 && !__instance.SelectedLevel && !__instance.ShowingWard;
         }
