@@ -19,6 +19,7 @@ Still a big work in progress!
 - Make startup tweaks not load warning scene for a frame.
 - Animations for CLS actions (scrolling, randomizing).
 - CLS folders?
+- Mayhaps editor keyboard shortcuts for changing gui scale
 - Maybe samurai
 - Remove Herobrine
 - A better readme.
