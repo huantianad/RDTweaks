@@ -22,8 +22,6 @@ namespace RDTweaks
         private ConfigEntry<bool> configCLSRandom;
         private ConfigEntry<bool> configSkipToLibrary;
 
-        private ConfigEntry<bool> configSwapP1P2;
-
         private enum SkipLocation
         {
             Disabled,
@@ -46,8 +44,6 @@ namespace RDTweaks
                                               "Whether or not to enable random level selector in CLS.");
             configSkipToLibrary = customFile.Bind("CLS", "SkipToLibrary", false,
                                                   "Whether or not to automatically enter the level library when entering CLS.");
-            configSwapP1P2 = customFile.Bind("Gameplay", "SwapP1P2", false,
-                                             "Whether or not to automatically swap P1 and P2, so P1 is on the left.");
 
             if (configSkipOnStartupTo.Value != SkipLocation.Disabled)
             {
@@ -79,11 +75,6 @@ namespace RDTweaks
             if (configSkipToLibrary.Value)
             {
                 Harmony.CreateAndPatchAll(typeof(SkipToLibrary), "dev.huantian.rdtweaks.skipToLibrary");
-            }
-
-            if (configSwapP1P2.Value)
-            {
-                Harmony.CreateAndPatchAll(typeof(SwapP1P2), "dev.huantian.rdtweaks.swapP1P2");
             }
 
             // Harmony.CreateAndPatchAll(typeof(UnwrapAll), "dev.huantian.rdtweaks.unwrapAll");
@@ -149,22 +140,6 @@ namespace RDTweaks
             }
         }
 
-        public static class SwapP1P2
-        {
-            [HarmonyPostfix]
-            [HarmonyPatch(typeof(RDInput), "Setup")]
-            public static void Postfix()
-            {
-                // Copied from RDInput.SwapP1AndP2Controls()
-                RDInput.p1.SwapSchemeIndex();
-                RDInput.p1Default.SwapSchemeIndex();
-                RDInput.p2.SwapSchemeIndex();
-                RDInput.p2Default.SwapSchemeIndex();
-                GC.PanP1 = (RDInput.p1.schemeIndex == 0) ? 1f : -1f;
-                GC.PanP2 = (RDInput.p2.schemeIndex == 0) ? 1f : -1f;
-            }
-        }
-
         public static class SkipToLibrary
         {
             [HarmonyPostfix]
@@ -179,6 +154,7 @@ namespace RDTweaks
             }
         }
 
+        // THIS DOES NOT WORK YET AAAA
         public static class UnwrapAll
         {
             [HarmonyPostfix]
