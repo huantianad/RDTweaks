@@ -20,6 +20,7 @@ namespace RDTweaks
 
         private ConfigEntry<bool> configCLSScrollWheel;
         private ConfigEntry<bool> configCLSRandom;
+        private static ConfigEntry<KeyboardShortcut> configCLSRandomKeybinding;
         private ConfigEntry<bool> configSkipToLibrary;
 
         private enum SkipLocation
@@ -33,17 +34,21 @@ namespace RDTweaks
         // Awake is called once when both the game and the plug-in are loaded
         public void Awake()
         {
-            var customFile = new ConfigFile(Path.Combine(Paths.ConfigPath, "RDTweaks.cfg"), true);
+            BepInPlugin metadata = MetadataHelper.GetMetadata(this);
+            var customFile = new ConfigFile(Path.Combine(Paths.ConfigPath, "RDTweaks.cfg"), true, metadata);
+            
             configSkipOnStartupTo = customFile.Bind("Startup", "SkipOnStartupTo", SkipLocation.Disabled,
-                                              "Where to skip to on startup, i.e. skip the warning text, skipping to CLS.");
+                "Where to skip to on startup, i.e. skip the warning text, skipping to CLS.");
             configSkipTitle = customFile.Bind("MainMenu", "SkipLogo",  false,
-                                              "Whether or not to skip the logo screen and go directly to the main menu.");
+                "Whether or not to skip the logo screen and go directly to the main menu.");
             configCLSScrollWheel = customFile.Bind("CLS", "ScrollWheel", false,
-                                                   "Whether or not to enable using scroll wheel to scroll in CLS.");
+                "Whether or not to enable using scroll wheel to scroll in CLS.");
             configCLSRandom = customFile.Bind("CLS", "EnableRandom", false,
-                                              "Whether or not to enable random level selector in CLS.");
-            configSkipToLibrary = customFile.Bind("CLS", "SkipToLibrary", false,
-                                                  "Whether or not to automatically enter the level library when entering CLS.");
+                "Whether or not to enable random level selector in CLS.");
+            configCLSRandomKeybinding = customFile.Bind("CLS", "RandomKeybinding", new KeyboardShortcut(KeyCode.R),
+                "Key to press for selecting a random level.");
+            configSkipToLibrary = customFile.Bind("CLS", "SkipToLibrary", false, 
+                "Whether or not to automatically enter the level library when entering CLS.");
 
             if (configSkipOnStartupTo.Value != SkipLocation.Disabled)
             {
@@ -58,6 +63,7 @@ namespace RDTweaks
                         break;
                 }
             }
+
 
             if (configSkipTitle.Value)
             {
@@ -94,27 +100,23 @@ namespace RDTweaks
         public static class SkipToCLS
         {
             [HarmonyPatch(typeof(scnLogo), "Exit")]
-            public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
-            {
-                return new CodeMatcher(instructions)
+            public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>
+                new CodeMatcher(instructions)
                     .MatchForward(false,
                         new CodeMatch(OpCodes.Call, AccessTools.Method(typeof(scnBase), "GoToMainMenu")))
                     .SetOperandAndAdvance(AccessTools.Method(typeof(scnBase), "GoToCustomLevelSelect"))
                     .InstructionEnumeration();
-            }
         }
 
         public static class SkipToEditor
         {
             [HarmonyPatch(typeof(scnLogo), "Exit")]
-            public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
-            {
-                return new CodeMatcher(instructions)
+            public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>
+                new CodeMatcher(instructions)
                     .MatchForward(false,
                         new CodeMatch(OpCodes.Call, AccessTools.Method(typeof(scnBase), "GoToMainMenu")))
                     .SetOperandAndAdvance(AccessTools.Method(typeof(scnBase), "GoToLevelEditor"))
                     .InstructionEnumeration();
-            }
         }
 
         public static class SkipLogo
@@ -188,7 +190,7 @@ namespace RDTweaks
             {
                 if (!CanSelectLevel(__instance)) return true;  // Not in right place
 
-                if (!Input.GetKeyDown(KeyCode.R)) return true;  // Not pressing R
+                if (!RDTweaks.configCLSRandomKeybinding.Value.IsDown()) return true;  // Not pressing R
 
                 var rand = new System.Random();
                 var total = __instance.levelDetail.CurrentLevelsData.Count;
@@ -208,7 +210,8 @@ namespace RDTweaks
 
                 var scrolling = Input.GetAxis("Mouse ScrollWheel");
                 if (scrolling == 0f) return true;  // They aren't scrolling
-
+                
+                // Now, based on the direction they scroll, move them up or down.
                 var direction = scrolling < 0f ? 1 : -1;
                 var total = __instance.levelDetail.CurrentLevelsData.Count;
                 var nextLocation = __instance.CurrentLevelIndex + direction;
@@ -250,7 +253,8 @@ namespace RDTweaks
             // Copied from scnCLS.Update()
             return __instance.CanReceiveInput && !__instance.levelDetail.showingErrorsContainer
                 && !__instance.levelImporter.Showing && !__instance.dialog.gameObject.activeInHierarchy
-                // Custom ones to only be true when they're in the scrolling syringe section.
+                
+                // Custom checks, make sure they're in the syringe section, and not already selecting a level.
                 && (bool)Traverse.Create(__instance).Field("canSelectLevel").GetValue()
                 && !__instance.SelectedLevel && !__instance.ShowingWard;
         }
