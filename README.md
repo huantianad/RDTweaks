@@ -1,25 +1,22 @@
 # RDTweaks
-*A [BepInEx](https://github.com/BepInEx/BepInEx) plugin which contains a collection of tweaks for RD.*
+*A [BepInEx](https://github.com/BepInEx/BepInEx) plugin containing small QoL changes for [Rhythm Doctor](https://rhythmdr.com/).*
 
 Still a big work in progress!
 
 
 ## Features
 - Skip to main menu, editor, or CLS on startup.
-- Skip to main menu, past the logo.
-- CLS level randomizer (default key: R)
+- Skip main menu logo.
+- CLS level randomizer (default key: R).
 - Skip to CLS library when entering.
 - Scroll wheen in CLS!
-- Automatically swap P1 and P2 so P1 is on the left like a sane person.
-- Geeze writing this is kinda hard I'll polish this later
-- I'll probably add more features soontm but uhh 
-  - coding hard
+- Configurable keybinds for changing editor UI scale.
+- Now works with [BepInEx Configuration Manager](https://github.com/BepInEx/BepInEx.ConfigurationManager)!
 
 ## TODO
 - Make startup tweaks not load warning scene for a frame.
 - Animations for CLS actions (scrolling, randomizing).
 - CLS folders?
-- Mayhaps editor keyboard shortcuts for changing gui scale
 - Maybe samurai
 - Remove Herobrine
 - A better readme.
