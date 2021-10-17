@@ -11,7 +11,7 @@ using RDLevelEditor;
 
 namespace RDTweaks
 {
-    [BepInPlugin(Guid, "RDTweaks", "0.2.0")]
+    [BepInPlugin(Guid, "RDTweaks", "0.3.0")]
     [BepInProcess("Rhythm Doctor.exe")]
     public class RDTweaks : BaseUnityPlugin
     {
