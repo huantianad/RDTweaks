@@ -7,21 +7,28 @@ using BepInEx;
 using BepInEx.Configuration;
 using UnityEngine;
 using HarmonyLib;
+using RDLevelEditor;
 
 namespace RDTweaks
 {
-    [BepInPlugin("dev.huantian.plugins.rdtweaks", "RDTweaks", "0.2.0")]
+    [BepInPlugin(Guid, "RDTweaks", "0.2.0")]
     [BepInProcess("Rhythm Doctor.exe")]
     public class RDTweaks : BaseUnityPlugin
     {
+        private const string Guid = "dev.huantian.plugins.rdtweaks";
+        
         private ConfigEntry<SkipLocation> configSkipOnStartupTo;
 
-        private ConfigEntry<bool> configSkipTitle;
+        private static ConfigEntry<bool> configSkipTitle;
 
-        private ConfigEntry<bool> configCLSScrollWheel;
-        private ConfigEntry<bool> configCLSRandom;
+        private static ConfigEntry<bool> configCLSScrollWheel;
+        private static ConfigEntry<bool> configCLSScrollSound;
+        private static ConfigEntry<bool> configCLSRandom;
         private static ConfigEntry<KeyboardShortcut> configCLSRandomKeybinding;
-        private ConfigEntry<bool> configSkipToLibrary;
+        private static ConfigEntry<bool> configSkipToLibrary;
+
+        private static ConfigEntry<KeyboardShortcut> configEditorScaleUp;
+        private static ConfigEntry<KeyboardShortcut> configEditorScaleDown;
 
         private enum SkipLocation
         {
@@ -34,56 +41,49 @@ namespace RDTweaks
         // Awake is called once when both the game and the plug-in are loaded
         public void Awake()
         {
-            BepInPlugin metadata = MetadataHelper.GetMetadata(this);
-            var customFile = new ConfigFile(Path.Combine(Paths.ConfigPath, "RDTweaks.cfg"), true, metadata);
-            
-            configSkipOnStartupTo = customFile.Bind("Startup", "SkipOnStartupTo", SkipLocation.Disabled,
+            configSkipOnStartupTo = Config.Bind("Startup", "SkipOnStartupTo", SkipLocation.Disabled,
                 "Where to skip to on startup, i.e. skip the warning text, skipping to CLS.");
-            configSkipTitle = customFile.Bind("MainMenu", "SkipLogo",  false,
+            configSkipTitle = Config.Bind("MainMenu", "SkipTitle",  false,
                 "Whether or not to skip the logo screen and go directly to the main menu.");
-            configCLSScrollWheel = customFile.Bind("CLS", "ScrollWheel", false,
+            configCLSScrollWheel = Config.Bind("CLS", "ScrollWheel", false,
                 "Whether or not to enable using scroll wheel to scroll in CLS.");
-            configCLSRandom = customFile.Bind("CLS", "EnableRandom", false,
+            configCLSScrollSound = Config.Bind("CLS", "ScrollSound", true,
+                "Whether or not to play a sound when scrolling with scroll wheel.");
+            configCLSRandom = Config.Bind("CLS", "EnableRandom", false,
                 "Whether or not to enable random level selector in CLS.");
-            configCLSRandomKeybinding = customFile.Bind("CLS", "RandomKeybinding", new KeyboardShortcut(KeyCode.R),
+            configCLSRandomKeybinding = Config.Bind("CLS", "RandomKeybinding", new KeyboardShortcut(KeyCode.R),
                 "Key to press for selecting a random level.");
-            configSkipToLibrary = customFile.Bind("CLS", "SkipToLibrary", false, 
+            configSkipToLibrary = Config.Bind("CLS", "SkipToLibrary", false, 
                 "Whether or not to automatically enter the level library when entering CLS.");
+            configEditorScaleUp = Config.Bind("Editor", "EditorScaleUp", new KeyboardShortcut(),
+                "Keybinding to increase the UI scale of the editor.");
+            configEditorScaleDown = Config.Bind("Editor", "EditorScaleDown", new KeyboardShortcut(),
+                "Keybinding to decrease the UI scale of the editor.");
 
             if (configSkipOnStartupTo.Value != SkipLocation.Disabled)
             {
-                Harmony.CreateAndPatchAll(typeof(SkipWarning), "dev.huantian.rdtweaks.skipWarning");
+                Harmony.CreateAndPatchAll(typeof(SkipWarning), Guid + ".skipWarning");
                 switch (configSkipOnStartupTo.Value)
                 {
                     case SkipLocation.CLS:
-                        Harmony.CreateAndPatchAll(typeof(SkipToCLS), "dev.huantian.rdtweaks.skipToCLS");
+                        Harmony.CreateAndPatchAll(typeof(SkipToCLS), Guid + ".skipToCLS");
                         break;
                     case SkipLocation.Editor:
-                        Harmony.CreateAndPatchAll(typeof(SkipToEditor), "dev.huantian.rdtweaks.skipToEditor");
+                        Harmony.CreateAndPatchAll(typeof(SkipToEditor), Guid + ".skipToEditor");
                         break;
                 }
             }
 
 
-            if (configSkipTitle.Value)
-            {
-                Harmony.CreateAndPatchAll(typeof(SkipLogo), "dev.huantian.rdtweaks.skipLogo");
-            }
+            Harmony.CreateAndPatchAll(typeof(SkipTitle), Guid + ".skipTitle");
 
-            if (configCLSScrollWheel.Value)
-            {
-                Harmony.CreateAndPatchAll(typeof(CLSScrollWheel), "dev.huantian.rdtweaks.CLSScrollWheel");
-            }
-            if (configCLSRandom.Value)
-            {
-                Harmony.CreateAndPatchAll(typeof(CLSRandom), "dev.huantian.rdtweaks.CLSRandom");
-            }
-            if (configSkipToLibrary.Value)
-            {
-                Harmony.CreateAndPatchAll(typeof(SkipToLibrary), "dev.huantian.rdtweaks.skipToLibrary");
-            }
+            Harmony.CreateAndPatchAll(typeof(CLSScrollWheel), Guid + ".CLSScrollWheel");
+            Harmony.CreateAndPatchAll(typeof(CLSRandom), Guid + ".CLSRandom");
+            Harmony.CreateAndPatchAll(typeof(SkipToLibrary), Guid + ".skipToLibrary");
 
-            // Harmony.CreateAndPatchAll(typeof(UnwrapAll), "dev.huantian.rdtweaks.unwrapAll");
+            Harmony.CreateAndPatchAll(typeof(EditorScaleKeybinding), Guid + ".editorScaleKeybinding");
+
+            // Harmony.CreateAndPatchAll(typeof(UnwrapAll), Guid + ".unwrapAll");
 
             Logger.LogMessage("Loaded!");
         }
@@ -119,12 +119,14 @@ namespace RDTweaks
                     .InstructionEnumeration();
         }
 
-        public static class SkipLogo
+        public static class SkipTitle
         {
             [HarmonyPostfix]
             [HarmonyPatch(typeof(scnMenu), "Start")]
             public static void Postfix(scnMenu __instance)
             {
+                if (!configSkipTitle.Value) return;
+                
                 var rdBase = (scnMenu)Traverse.Create(__instance).Field("_instance").GetValue();
                 rdBase.StartCoroutine(GoToMain(__instance));
             }
@@ -148,37 +150,13 @@ namespace RDTweaks
             [HarmonyPatch(typeof(scnCLS), "Start")]
             public static void Postfix(scnCLS __instance)
             {
+                if (!configSkipToLibrary.Value) return;
+                
                 var rdBase = (scnCLS)Traverse.Create(__instance).Field("_instance").GetValue();
 
                 // Copied from scnCLS.SelectWardOption()
                 if (SteamIntegration.initialized) SteamWorkshop.ClearItemsInfoCache();
                 rdBase.StartCoroutine(__instance.LoadLevelsData(-1f));
-            }
-        }
-
-        // THIS DOES NOT WORK YET AAAA
-        public static class UnwrapAll
-        {
-            [HarmonyPostfix]
-            [HarmonyPatch(typeof(scnCLS), "Start")]
-            public static void Postfix(scnCLS __instance)
-            {
-                var rdBase = (scnCLS)Traverse.Create(__instance).Field("_instance").GetValue();
-                rdBase.StartCoroutine(Test(__instance));
-            }
-
-            private static IEnumerator Test(scnCLS __instance)
-            {
-                foreach (var levelData in __instance.levelDetail.CurrentLevelsData)
-                {
-                    //Debug.Log(levelData.tags);
-                    if (Persistence.GetCustomLevelRank(levelData.Hash, 1f) == -3)
-                    {
-                        Debug.Log("hi");
-                        Persistence.SetCustomLevelRank(levelData.Hash, -1, 1f);
-                    }
-                }
-                yield break;
             }
         }
 
@@ -188,9 +166,10 @@ namespace RDTweaks
             [HarmonyPatch(typeof(scnCLS), "Update")]
             public static bool Prefix(scnCLS __instance)
             {
+                if (!configCLSRandom.Value) return true;  // Tweak not enabled
                 if (!CanSelectLevel(__instance)) return true;  // Not in right place
 
-                if (!RDTweaks.configCLSRandomKeybinding.Value.IsDown()) return true;  // Not pressing R
+                if (!configCLSRandomKeybinding.Value.IsDown()) return true;  // Not pressing R
 
                 var rand = new System.Random();
                 var total = __instance.levelDetail.CurrentLevelsData.Count;
@@ -206,7 +185,8 @@ namespace RDTweaks
             [HarmonyPatch(typeof(scnCLS), "Update")]
             public static bool Prefix(scnCLS __instance)
             {
-                if (!CanSelectLevel(__instance)) return true; // Not in right place
+                if (!configCLSScrollWheel.Value) return true;  // Tweak not enabled
+                if (!CanSelectLevel(__instance)) return true;  // Not in right place
 
                 var scrolling = Input.GetAxis("Mouse ScrollWheel");
                 if (scrolling == 0f) return true;  // They aren't scrolling
@@ -220,6 +200,32 @@ namespace RDTweaks
                 else if (nextLocation < 0) nextLocation = total - 1;
 
                 GoToLevel(__instance, nextLocation);
+                
+                if (configCLSScrollSound.Value)
+                {
+                    var sound = __instance.CurrentLevel.CurrentRank == -3 ? "sndLibrarySelectWrapper" : "sndLibrarySelectSyringe";
+                    var percent = RDUtils.PitchSemitonesToPercent(direction);
+                    __instance.CLSPlaySound(sound, pitch: percent);
+                }
+
+                return false;
+            }
+        }
+
+        public class EditorScaleKeybinding
+        {
+            [HarmonyPrefix]
+            [HarmonyPatch(typeof(scnEditor), "Update")]
+            public static bool Prefix(scnEditor __instance)
+            {
+                var scaleUp = configEditorScaleUp.Value.IsDown();
+                var scaleDown = configEditorScaleDown.Value.IsDown();
+
+                if (!(scaleUp | scaleDown)) return true;
+                
+                var rdBase = (scnEditor) Traverse.Create(__instance).Field("_instance").GetValue();
+                var updateSize = Traverse.Create(__instance).Method("UpdateEditorSizeCo", scaleUp).GetValue();
+                rdBase.StartCoroutine((IEnumerator) updateSize);
 
                 return false;
             }
