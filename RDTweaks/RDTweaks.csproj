@@ -359,7 +359,8 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
-    <TestPluginPath Include="/home/huantian/.steam/steam/steamapps/common/Rhythm Doctor/BepInEx/plugins/RDTweaks/" />
+<!--    <TestPluginPath Include="/home/huantian/.steam/steam/steamapps/common/Rhythm Doctor/BepInEx/plugins/RDTweaks/" />-->
+    <TestPluginPath Include="/home/huantian/Games/RhythmDoctor_linux/BepInEx/plugins/RDTweaks/" />
   </ItemGroup>
   <ItemGroup>
     <Analyzer Include="..\packages\BepInEx.Analyzers.1.0.8\analyzers\dotnet\cs\BepInEx.Analyzers.CodeFixes.dll" />

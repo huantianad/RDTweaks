@@ -10,20 +10,26 @@ using Steamworks;
 
 namespace RDTweaks
 {
-    [BepInPlugin(Guid, "RDTweaks", "0.4.0")]
+    [BepInPlugin(Guid, "RDTweaks", "0.5.0")]
     [BepInProcess("Rhythm Doctor.exe")]
     public class RDTweaks : BaseUnityPlugin
     {
         private const string Guid = "dev.huantian.plugins.rdtweaks";
 
-        private ConfigEntry<bool> configAlwaysUseSteam;
-        private static ConfigEntry<SkipLocation> configSkipOnStartupTo;
+        private static class PConfig
+        {
+            internal static ConfigEntry<bool> alwaysUseSteam;
+            internal static ConfigEntry<SkipLocation> skipOnStartupTo;
 
-        private ConfigEntry<bool> configSkipTitle;
+            internal static ConfigEntry<bool> skipTitle;
 
-        private ConfigEntry<bool> configCLSScrollWheel;
-        private static ConfigEntry<bool> configCLSScrollSound;
-        private ConfigEntry<bool> configSkipToLibrary;
+            internal static ConfigEntry<bool> CLSScrollWheel;
+            internal static ConfigEntry<bool> CLSScrollSound;
+            internal static ConfigEntry<bool> skipToLibrary;
+
+            internal static ConfigEntry<bool> hideMouseCursor;
+        }
+
 
         private enum SkipLocation
         {
@@ -35,43 +41,31 @@ namespace RDTweaks
         // Awake is called once when both the game and the plug-in are loaded
         public void Awake()
         {
-            configAlwaysUseSteam = Config.Bind("Startup", "AlwaysUseSteam", false,
+            PConfig.alwaysUseSteam = Config.Bind("Startup", "AlwaysUseSteam", false,
                 "Whether or not to force steam to be used to start the game.");
-            configSkipOnStartupTo = Config.Bind("Startup", "SkipOnStartupTo", SkipLocation.MainMenu,
+            PConfig.skipOnStartupTo = Config.Bind("Startup", "SkipOnStartupTo", SkipLocation.MainMenu,
                 "Where the game should go on startup.");
-            configSkipTitle = Config.Bind("MainMenu", "SkipTitle",  false,
+            PConfig.skipTitle = Config.Bind("MainMenu", "SkipTitle",  false,
                 "Whether or not to skip the logo screen and go directly to the main menu.");
-            configCLSScrollWheel = Config.Bind("CLS", "ScrollWheel", false,
+            PConfig.CLSScrollWheel = Config.Bind("CLS", "ScrollWheel", false,
                 "Whether or not to enable using scroll wheel to scroll in CLS.");
-            configCLSScrollSound = Config.Bind("CLS", "ScrollSound", true,
+            PConfig.CLSScrollSound = Config.Bind("CLS", "ScrollSound", true,
                 "Whether or not to play a sound when scrolling with scroll wheel.");
-            configSkipToLibrary = Config.Bind("CLS", "SkipToLibrary", false, 
+            PConfig.skipToLibrary = Config.Bind("CLS", "SkipToLibrary", false,
                 "Whether or not to automatically enter the level library when entering CLS.");
+            PConfig.hideMouseCursor = Config.Bind("Gameplay", "hideMouseCursor", false,
+                "Whether or not to hide mouse cursor when in a level");
 
-            switch (configSkipOnStartupTo.Value)
-            {
-                case SkipLocation.CLS:
-                case SkipLocation.Editor:
-                    Harmony.CreateAndPatchAll(typeof(SkipOnStartup), Guid + ".SkipOnStartup");
-                    break;
-                case SkipLocation.MainMenu:
-                    // Main Menu is default game behavior, don't change anything.
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
+            if (PConfig.skipOnStartupTo.Value != SkipLocation.MainMenu)
+                Harmony.CreateAndPatchAll(typeof(SkipOnStartup), Guid + ".SkipOnStartup");
 
-            if (configAlwaysUseSteam.Value)
+            if (PConfig.alwaysUseSteam.Value)
                 Harmony.CreateAndPatchAll(typeof(AlwaysUseSteam), Guid + ".alwaysUseSteam");
-            
-            if (configSkipTitle.Value)
-                Harmony.CreateAndPatchAll(typeof(SkipTitle), Guid + ".skipTitle");
-            
-            if (configCLSScrollWheel.Value)
-                Harmony.CreateAndPatchAll(typeof(CLSScrollWheel), Guid + ".CLSScrollWheel");
-            
-            if (configSkipToLibrary.Value)
-                Harmony.CreateAndPatchAll(typeof(SkipToLibrary), Guid + ".skipToLibrary");
+
+            Harmony.CreateAndPatchAll(typeof(SkipTitle), Guid + ".skipTitle");
+            Harmony.CreateAndPatchAll(typeof(CLSScrollWheel), Guid + ".CLSScrollWheel");
+            Harmony.CreateAndPatchAll(typeof(SkipToLibrary), Guid + ".skipToLibrary");
+            Harmony.CreateAndPatchAll(typeof(HideMouseCursor), Guid + ".hideMouseCursor");
 
             Logger.LogMessage("Loaded!");
         }
@@ -97,7 +91,10 @@ namespace RDTweaks
             [HarmonyPatch(typeof(scnLogo), "Exit")]
             public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
             {
-                var methodName = configSkipOnStartupTo.Value == SkipLocation.Editor ? "GoToLevelEditor" : "GoToCustomLevelSelect";
+                var methodName = PConfig.skipOnStartupTo.Value == SkipLocation.Editor
+                    ? "GoToLevelEditor"
+                    : "GoToCustomLevelSelect";
+
                 return new CodeMatcher(instructions)
                     .MatchForward(false,
                         new CodeMatch(OpCodes.Call, AccessTools.Method(typeof(scnBase), "GoToMainMenu")))
@@ -112,6 +109,8 @@ namespace RDTweaks
             [HarmonyPatch(typeof(scnMenu), "Start")]
             public static void Postfix(scnMenu __instance)
             {
+                if (!PConfig.skipTitle.Value) return;
+
                 var rdBase = (scnMenu)Traverse.Create(__instance).Field("_instance").GetValue();
                 rdBase.StartCoroutine(GoToMain(__instance));
             }
@@ -136,6 +135,8 @@ namespace RDTweaks
             [HarmonyPatch(typeof(scnCLS), "Start")]
             public static void Postfix(scnCLS __instance)
             {
+                if (!PConfig.skipToLibrary.Value) return;
+
                 var rdBase = (scnCLS)Traverse.Create(__instance).Field("_instance").GetValue();
 
                 // Copied from scnCLS.SelectWardOption()
@@ -150,12 +151,16 @@ namespace RDTweaks
             [HarmonyPatch(typeof(scnCLS), "Update")]
             public static bool Prefix(scnCLS __instance)
             {
-                var rdBase = (scnCLS)Traverse.Create(__instance).Field("_instance").GetValue();
-                
-                if (!CanSelectLevel(__instance)) return true;  // Not in right place
+                if (!PConfig.CLSScrollWheel.Value) return true;
 
+                var rdBase = (scnCLS)Traverse.Create(__instance).Field("_instance").GetValue();
+
+                // Check if they're in the level select
+                if (!CanSelectLevel(__instance)) return true;
+
+                // Check if they can scroll
                 var scrolling = Input.GetAxis("Mouse ScrollWheel");
-                if (scrolling == 0f) return true;  // They aren't scrolling
+                if (scrolling == 0f) return true;
                 
                 // Now, based on the direction they scroll, move them up or down.
                 var direction = scrolling < 0f ? 1 : -1;
@@ -171,7 +176,7 @@ namespace RDTweaks
                 __instance.sendLevelDataToLevelDetailCoroutine = __instance.SendLevelDataToLevelDetail(timeToUpdate: 0.0f);
                 rdBase.StartCoroutine(__instance.sendLevelDataToLevelDetailCoroutine);
                 
-                if (configCLSScrollSound.Value)
+                if (PConfig.CLSScrollSound.Value)
                 {
                     var sound = __instance.CurrentLevel.CurrentRank == -3 ? "sndLibrarySelectWrapper" : "sndLibrarySelectSyringe";
                     var percent = RDUtils.PitchSemitonesToPercent(direction);
@@ -191,6 +196,31 @@ namespace RDTweaks
                 // Custom checks, make sure they're in the syringe section, and not already selecting a level.
                 && (bool)Traverse.Create(__instance).Field("canSelectLevel").GetValue()
                 && !__instance.SelectedLevel && !__instance.ShowingWard;
+        }
+
+        public static class HideMouseCursor
+        {
+            [HarmonyPrefix]
+            [HarmonyPatch(typeof(scnGame), "Start")]
+            public static bool Prefix(scnGame __instance)
+            {
+                if (!PConfig.hideMouseCursor.Value) return true;
+
+                if (__instance.editor != null) return true;
+
+                Cursor.visible = false;
+                return true;
+            }
+
+            [HarmonyPrefix]
+            [HarmonyPatch(typeof(scnBase), "Start")]
+            public static bool Prefix(scnBase __instance)
+            {
+                if (!(__instance is scnGame))
+                    Cursor.visible = true;
+
+                return true;
+            }
         }
     }
 }
