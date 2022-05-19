@@ -111,8 +111,7 @@ namespace RDTweaks
             {
                 if (!PConfig.skipTitle.Value) return;
 
-                var rdBase = (scnMenu)Traverse.Create(__instance).Field("_instance").GetValue();
-                rdBase.StartCoroutine(GoToMain(__instance));
+                __instance.StartCoroutine(GoToMain(__instance));
             }
 
             private static IEnumerator GoToMain(scnMenu __instance)
@@ -137,11 +136,9 @@ namespace RDTweaks
             {
                 if (!PConfig.skipToLibrary.Value) return;
 
-                var rdBase = (scnCLS)Traverse.Create(__instance).Field("_instance").GetValue();
-
                 // Copied from scnCLS.SelectWardOption()
                 if (SteamIntegration.initialized) SteamWorkshop.ClearItemsInfoCache();
-                rdBase.StartCoroutine(__instance.LoadLevelsData(-1f));
+                __instance.StartCoroutine(__instance.LoadLevelsData(-1f));
             }
         }
 
@@ -152,8 +149,6 @@ namespace RDTweaks
             public static bool Prefix(scnCLS __instance)
             {
                 if (!PConfig.CLSScrollWheel.Value) return true;
-
-                var rdBase = (scnCLS)Traverse.Create(__instance).Field("_instance").GetValue();
 
                 // Check if they're in the level select
                 if (!CanSelectLevel(__instance)) return true;
@@ -174,7 +169,7 @@ namespace RDTweaks
                     .Method("ShowSyringesWithIndex", __instance.levelDetail.CurrentLevelsData, nextLocation)
                     .GetValue();
                 __instance.sendLevelDataToLevelDetailCoroutine = __instance.SendLevelDataToLevelDetail(timeToUpdate: 0.0f);
-                rdBase.StartCoroutine(__instance.sendLevelDataToLevelDetailCoroutine);
+                __instance.StartCoroutine(__instance.sendLevelDataToLevelDetailCoroutine);
                 
                 if (PConfig.CLSScrollSound.Value)
                 {
