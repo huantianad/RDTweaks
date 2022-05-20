@@ -10,6 +10,7 @@ Still a big work in progress!
 - Skip to CLS library when entering.
 - Scroll wheel in CLS!
 - Hide mouse cursor while in game.
+- Block mouse input while in game.
 - Now works with [BepInEx Configuration Manager](https://github.com/BepInEx/BepInEx.ConfigurationManager)!
 
 ## TODO
