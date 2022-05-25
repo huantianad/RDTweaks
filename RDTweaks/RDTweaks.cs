@@ -46,7 +46,7 @@ namespace RDTweaks
                 "Whether or not to force steam to be used to start the game.");
             PConfig.SkipOnStartupTo = Config.Bind("Startup", "SkipOnStartupTo", SkipLocation.MainMenu,
                 "Where the game should go on startup.");
-            PConfig.SkipTitle = Config.Bind("MainMenu", "SkipTitle",  false,
+            PConfig.SkipTitle = Config.Bind("MainMenu", "SkipTitle", false,
                 "Whether or not to skip the logo screen and go directly to the main menu.");
             PConfig.CLSScrollWheel = Config.Bind("CLS", "ScrollWheel", false,
                 "Whether or not to enable using scroll wheel to scroll in CLS.");
@@ -92,7 +92,7 @@ namespace RDTweaks
 
         public static class SkipOnStartup
         {
-            [HarmonyPatch(typeof(scnLogo), "Exit")]
+            [HarmonyPatch(typeof(scnLogo), nameof(scnLogo.Exit))]
             public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
             {
                 var methodName = PConfig.SkipOnStartupTo.Value == SkipLocation.Editor
@@ -110,7 +110,7 @@ namespace RDTweaks
         public static class SkipTitle
         {
             [HarmonyPostfix]
-            [HarmonyPatch(typeof(scnMenu), "Start")]
+            [HarmonyPatch(typeof(scnMenu), nameof(scnMenu.Start))]
             public static void Postfix(scnMenu __instance)
             {
                 if (!PConfig.SkipTitle.Value) return;
@@ -121,14 +121,14 @@ namespace RDTweaks
             private static IEnumerator GoToMain(scnMenu __instance)
             {
                 yield return new WaitForSeconds(0.1f);
-                AccessTools.Method(__instance.GetType(), "GoToSection").Invoke(__instance, new object[] { 1 });
+                __instance.GoToSection(scnMenu.MenuSection.MainMenu);
             }
         }
 
         public static class SkipToLibrary
         {
             [HarmonyPostfix]
-            [HarmonyPatch(typeof(scnCLS), "Start")]
+            [HarmonyPatch(typeof(scnCLS), nameof(scnCLS.Start))]
             public static void Postfix(scnCLS __instance)
             {
                 if (!PConfig.SkipToLibrary.Value) return;
@@ -142,7 +142,7 @@ namespace RDTweaks
         public class CLSScrollWheel
         {
             [HarmonyPrefix]
-            [HarmonyPatch(typeof(scnCLS), "Update")]
+            [HarmonyPatch(typeof(scnCLS), nameof(scnCLS.Update))]
             public static bool Prefix(scnCLS __instance)
             {
                 if (!PConfig.CLSScrollWheel.Value) return true;
@@ -162,15 +162,16 @@ namespace RDTweaks
                 if (nextLocation > total - 1) nextLocation = 0;
                 else if (nextLocation < 0) nextLocation = total - 1;
 
-                Traverse.Create(__instance)
-                    .Method("ShowSyringesWithIndex", __instance.levelDetail.CurrentLevelsData, nextLocation)
-                    .GetValue();
-                __instance.sendLevelDataToLevelDetailCoroutine = __instance.SendLevelDataToLevelDetail(timeToUpdate: 0.0f);
+                __instance.ShowSyringesWithIndex(__instance.levelDetail.CurrentLevelsData, nextLocation);
+                __instance.sendLevelDataToLevelDetailCoroutine =
+                    __instance.SendLevelDataToLevelDetail(timeToUpdate: 0.5f);
                 __instance.StartCoroutine(__instance.sendLevelDataToLevelDetailCoroutine);
 
                 if (PConfig.CLSScrollSound.Value)
                 {
-                    var sound = __instance.CurrentLevel.CurrentRank == -3 ? "sndLibrarySelectWrapper" : "sndLibrarySelectSyringe";
+                    var sound = __instance.CurrentLevel.CurrentRank == -3
+                        ? "sndLibrarySelectWrapper"
+                        : "sndLibrarySelectSyringe";
                     var percent = RDUtils.PitchSemitonesToPercent(direction);
                     __instance.CLSPlaySound(sound, pitch: percent);
                 }
@@ -189,7 +190,7 @@ namespace RDTweaks
 
                     // Custom checks, make sure they're in the syringe section
                     // and not already selecting a level.
-                    && (bool) Traverse.Create(__instance).Field("canSelectLevel").GetValue()
+                    && __instance.canSelectLevel
                     && !__instance.SelectedLevel
                     && !__instance.ShowingWard;
             }
@@ -200,7 +201,7 @@ namespace RDTweaks
         {
             /// Toggle cursor when entering and leaving level
             [HarmonyPrefix]
-            [HarmonyPatch(typeof(scnBase), "Start")]
+            [HarmonyPatch(typeof(scnBase), nameof(scnBase.Start))]
             public static bool Prefix(scnBase __instance)
             {
                 Cursor.visible = !(
@@ -228,7 +229,11 @@ namespace RDTweaks
         public static class BlockMouseInGame
         {
             [HarmonyPrefix]
-            [HarmonyPatch(typeof(RDInputType_Keyboard), "mouseButtonsAvailable", MethodType.Getter)]
+            [HarmonyPatch(
+                typeof(RDInputType_Keyboard),
+                nameof(RDInputType_Keyboard.mouseButtonsAvailable),
+                MethodType.Getter
+            )]
             public static bool Prefix(RDInputType_Keyboard __instance, ref bool __result)
             {
                 var game = scnGame.instance;
