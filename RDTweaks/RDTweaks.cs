@@ -8,6 +8,7 @@ using HarmonyLib;
 using RDLevelEditor;
 using Steamworks;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace RDTweaks
 {
@@ -27,6 +28,7 @@ namespace RDTweaks
             internal static ConfigEntry<bool> CLSScrollWheel;
             internal static ConfigEntry<bool> CLSScrollSound;
             internal static ConfigEntry<bool> skipToLibrary;
+            internal static ConfigEntry<bool> pixelFontInputs;
 
             internal static ConfigEntry<bool> hideMouseCursor;
             internal static ConfigEntry<bool> blockMouseInGame;
@@ -55,6 +57,8 @@ namespace RDTweaks
                 "Whether or not to play a sound when scrolling with scroll wheel.");
             PConfig.skipToLibrary = Config.Bind("CLS", "SkipToLibrary", false,
                 "Whether or not to automatically enter the level library when entering CLS.");
+            PConfig.pixelFontInputs = Config.Bind("CLS", "PixelFontInput", false,
+                "Whether or not to use the pixel font for the URL import and search bar inputs.");
             PConfig.hideMouseCursor = Config.Bind("Gameplay", "HideMouseCursor", false,
                 "Whether or not to hide mouse cursor when in a level");
             PConfig.blockMouseInGame = Config.Bind("Gameplay", "BlockMouseInGame", false,
@@ -86,6 +90,7 @@ namespace RDTweaks
             Harmony.CreateAndPatchAll(typeof(SkipTitle), Guid + ".skipTitle");
             Harmony.CreateAndPatchAll(typeof(CLSScrollWheel), Guid + ".CLSScrollWheel");
             Harmony.CreateAndPatchAll(typeof(SkipToLibrary), Guid + ".skipToLibrary");
+            Harmony.CreateAndPatchAll(typeof(PixelFontInputs), Guid + ".pixelFontInput");
             Harmony.CreateAndPatchAll(typeof(HideMouseCursor), Guid + ".hideMouseCursor");
             Harmony.CreateAndPatchAll(typeof(BlockMouseInGame), Guid + ".blockMouseInGame");
 
@@ -201,6 +206,52 @@ namespace RDTweaks
                 }
 
                 return false;
+            }
+        }
+
+        public static class PixelFontInputs
+        {
+            // Replace font for the search bar input text (placeholder is already in pixel font)
+            [HarmonyPostfix]
+            [HarmonyPatch(typeof(scnCLS), "Awake")]
+            public static void CLSPostfix(InputField ___searchBarInputField)
+            {
+                if (!PConfig.pixelFontInputs.Value) return;
+                
+                ___searchBarInputField.onValueChanged.AddListener(delegate
+                {
+                    RDEditorUtils.UpdateUIText(___searchBarInputField.textComponent, ___searchBarInputField.text);
+                });
+            }
+            
+            // Replace font for the level import placeholder text
+            [HarmonyPostfix]
+            [HarmonyPatch(typeof(LevelImporter), "Initialize")]
+            public static void LevelImporterPostfix(InputField ___urlInput)
+            {
+                if (!PConfig.pixelFontInputs.Value) return;
+                
+                var textComponent = ___urlInput.placeholder.GetComponent<Text>();
+                var appropriateFont = RDString.GetAppropiateFontForString(textComponent.text);
+
+                if (textComponent.font != appropriateFont)
+                {
+                    textComponent.font = appropriateFont;
+                    textComponent.fontSize = 8;
+                }
+            }
+            
+            // Replace font for the level import input text
+            [HarmonyPrefix]
+            [HarmonyPatch(typeof(LevelImporter), "LateUpdate")]
+            public static bool Prefix(InputField ___urlInput, int ___lastUrlInputTextLength)
+            {
+                if (!PConfig.pixelFontInputs.Value) return true;
+                
+                if (___lastUrlInputTextLength != ___urlInput.text.Length)
+                    RDEditorUtils.UpdateUIText(___urlInput.textComponent, ___urlInput.text);
+                
+                return true;
             }
         }
 
