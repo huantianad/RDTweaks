@@ -178,22 +178,22 @@ namespace RDTweaks
 
                 return false;
             }
+        }
 
-            private static bool CanSelectLevel(scnCLS __instance)
-            {
-                return
-                    // Copied from scnCLS.Update()
-                    __instance.CanReceiveInput
-                    && !__instance.levelDetail.showingErrorsContainer
-                    && !__instance.levelImporter.Showing
-                    && !__instance.dialog.gameObject.activeInHierarchy
+        private static bool CanSelectLevel(scnCLS __instance)
+        {
+            return
+                // Copied from scnCLS.Update()
+                __instance.CanReceiveInput
+                && !__instance.levelDetail.showingErrorsContainer
+                && !__instance.levelImporter.Showing
+                && !__instance.dialog.gameObject.activeInHierarchy
 
-                    // Custom checks, make sure they're in the syringe section
-                    // and not already selecting a level.
-                    && __instance.canSelectLevel
-                    && !__instance.SelectedLevel
-                    && !__instance.ShowingWard;
-            }
+                // Custom checks, make sure they're in the syringe section
+                // and not already selecting a level.
+                && __instance.canSelectLevel
+                && !__instance.SelectedLevel
+                && !__instance.ShowingWard;
         }
 
 
