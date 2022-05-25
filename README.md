@@ -11,6 +11,7 @@ Still a big work in progress!
 - Scroll wheel in CLS!
 - Hide mouse cursor while in game.
 - Block mouse input while in game.
+- Pixel font in CLS search and importer.
 - Now works with [BepInEx Configuration Manager](https://github.com/BepInEx/BepInEx.ConfigurationManager)!
 
 ## TODO

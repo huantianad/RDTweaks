@@ -11,7 +11,7 @@ using UnityEngine.UI;
 
 namespace RDTweaks
 {
-    [BepInPlugin(Guid, "RDTweaks", "0.5.1")]
+    [BepInPlugin(Guid, "RDTweaks", "0.6.0")]
     [BepInProcess("Rhythm Doctor.exe")]
     public class RDTweaks : BaseUnityPlugin
     {
@@ -193,20 +193,20 @@ namespace RDTweaks
             public static void CLSPostfix(InputField ___searchBarInputField)
             {
                 if (!PConfig.PixelFontInputs.Value) return;
-                
+
                 ___searchBarInputField.onValueChanged.AddListener(delegate
                 {
                     RDEditorUtils.UpdateUIText(___searchBarInputField.textComponent, ___searchBarInputField.text);
                 });
             }
-            
+
             // Replace font for the level import placeholder text
             [HarmonyPostfix]
             [HarmonyPatch(typeof(LevelImporter), "Initialize")]
             public static void LevelImporterPostfix(InputField ___urlInput)
             {
                 if (!PConfig.PixelFontInputs.Value) return;
-                
+
                 var textComponent = ___urlInput.placeholder.GetComponent<Text>();
                 var appropriateFont = RDString.GetAppropiateFontForString(textComponent.text);
 
@@ -216,7 +216,7 @@ namespace RDTweaks
                     textComponent.fontSize = 7;
                 }
             }
-            
+
             // Replace font for the level import input text
             [HarmonyPrefix]
             [HarmonyPatch(typeof(LevelImporter), "LateUpdate")]
