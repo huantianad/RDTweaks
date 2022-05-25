@@ -217,15 +217,17 @@ namespace RDTweaks
 
         public static class HideMouseCursor
         {
+            /// Toggle cursor when entering and leaving level
             [HarmonyPrefix]
-            [HarmonyPatch(typeof(scnGame), "Start")]
-            public static bool Prefix(scnGame __instance)
+            [HarmonyPatch(typeof(scnBase), "Start")]
+            public static bool Prefix(scnBase __instance)
             {
-                if (!PConfig.hideMouseCursor.Value) return true;
+                Cursor.visible = !(
+                    PConfig.hideMouseCursor.Value
+                    && __instance is scnGame
+                    && !__instance.editorMode
+                );
 
-                if (__instance.editorMode) return true;
-
-                Cursor.visible = false;
                 return true;
             }
 
@@ -239,17 +241,6 @@ namespace RDTweaks
                 if (__instance.editorMode) return;
 
                 Cursor.visible = __instance.paused;
-            }
-
-            /// Enable cursor when exiting level
-            [HarmonyPrefix]
-            [HarmonyPatch(typeof(scnBase), "Start")]
-            public static bool Prefix(scnBase __instance)
-            {
-                if (!(__instance is scnGame))
-                    Cursor.visible = true;
-
-                return true;
             }
         }
 
