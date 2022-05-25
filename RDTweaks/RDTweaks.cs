@@ -237,7 +237,7 @@ namespace RDTweaks
                 if (textComponent.font != appropriateFont)
                 {
                     textComponent.font = appropriateFont;
-                    textComponent.fontSize = 8;
+                    textComponent.fontSize = 7;
                 }
             }
             
@@ -247,10 +247,13 @@ namespace RDTweaks
             public static bool Prefix(InputField ___urlInput, int ___lastUrlInputTextLength)
             {
                 if (!PConfig.pixelFontInputs.Value) return true;
-                
+
                 if (___lastUrlInputTextLength != ___urlInput.text.Length)
+                {
                     RDEditorUtils.UpdateUIText(___urlInput.textComponent, ___urlInput.text);
-                
+                    ___urlInput.textComponent.fontSize = 7;
+                }
+
                 return true;
             }
         }
