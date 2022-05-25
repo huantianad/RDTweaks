@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using System.Reflection.Emit;
 using BepInEx;
@@ -7,6 +7,7 @@ using HarmonyLib;
 using RDLevelEditor;
 using Steamworks;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace RDTweaks
 {
@@ -25,6 +26,7 @@ namespace RDTweaks
 
             internal static ConfigEntry<bool> CLSScrollWheel;
             internal static ConfigEntry<bool> CLSScrollSound;
+            internal static ConfigEntry<bool> PixelFontInputs;
             internal static ConfigEntry<bool> SkipToLibrary;
 
             internal static ConfigEntry<bool> HideMouseCursor;
@@ -54,6 +56,8 @@ namespace RDTweaks
                 "Whether or not to play a sound when scrolling with scroll wheel.");
             PConfig.SkipToLibrary = Config.Bind("CLS", "SkipToLibrary", false,
                 "Whether or not to automatically enter the level library when entering CLS.");
+            PConfig.PixelFontInputs = Config.Bind("CLS", "PixelFontInputs", false,
+                "Whether or not to use the pixel font for the URL import and search bar inputs.");
             PConfig.HideMouseCursor = Config.Bind("Gameplay", "HideMouseCursor", false,
                 "Whether or not to hide mouse cursor when in a level");
             PConfig.BlockMouseInGame = Config.Bind("Gameplay", "BlockMouseInGame", false,
@@ -67,6 +71,7 @@ namespace RDTweaks
 
             Harmony.CreateAndPatchAll(typeof(SkipTitle), Guid + ".SkipTitle");
             Harmony.CreateAndPatchAll(typeof(CLSScrollWheel), Guid + ".CLSScrollWheel");
+            Harmony.CreateAndPatchAll(typeof(PixelFontInputs), Guid + ".PixelFontInputs");
             Harmony.CreateAndPatchAll(typeof(SkipToLibrary), Guid + ".SkipToLibrary");
             Harmony.CreateAndPatchAll(typeof(HideMouseCursor), Guid + ".HideMouseCursor");
             Harmony.CreateAndPatchAll(typeof(BlockMouseInGame), Guid + ".BlockMouseInGame");
@@ -180,6 +185,55 @@ namespace RDTweaks
             }
         }
 
+        public static class PixelFontInputs
+        {
+            // Replace font for the search bar input text (placeholder is already in pixel font)
+            [HarmonyPostfix]
+            [HarmonyPatch(typeof(scnCLS), "Awake")]
+            public static void CLSPostfix(InputField ___searchBarInputField)
+            {
+                if (!PConfig.PixelFontInputs.Value) return;
+                
+                ___searchBarInputField.onValueChanged.AddListener(delegate
+                {
+                    RDEditorUtils.UpdateUIText(___searchBarInputField.textComponent, ___searchBarInputField.text);
+                });
+            }
+            
+            // Replace font for the level import placeholder text
+            [HarmonyPostfix]
+            [HarmonyPatch(typeof(LevelImporter), "Initialize")]
+            public static void LevelImporterPostfix(InputField ___urlInput)
+            {
+                if (!PConfig.PixelFontInputs.Value) return;
+                
+                var textComponent = ___urlInput.placeholder.GetComponent<Text>();
+                var appropriateFont = RDString.GetAppropiateFontForString(textComponent.text);
+
+                if (textComponent.font != appropriateFont)
+                {
+                    textComponent.font = appropriateFont;
+                    textComponent.fontSize = 7;
+                }
+            }
+            
+            // Replace font for the level import input text
+            [HarmonyPrefix]
+            [HarmonyPatch(typeof(LevelImporter), "LateUpdate")]
+            public static bool Prefix(InputField ___urlInput, int ___lastUrlInputTextLength)
+            {
+                if (!PConfig.PixelFontInputs.Value) return true;
+
+                if (___lastUrlInputTextLength != ___urlInput.text.Length)
+                {
+                    RDEditorUtils.UpdateUIText(___urlInput.textComponent, ___urlInput.text);
+                    ___urlInput.textComponent.fontSize = 7;
+                }
+
+                return true;
+            }
+        }
+
         private static bool CanSelectLevel(scnCLS __instance)
         {
             return
@@ -195,7 +249,6 @@ namespace RDTweaks
                 && !__instance.SelectedLevel
                 && !__instance.ShowingWard;
         }
-
 
         public static class HideMouseCursor
         {
