@@ -24,8 +24,11 @@ Still a big work in progress!
 - Better comments for config.
 
 ## Installation
-1. Download the latest version of BepInEx 5 **x86** [here](https://github.com/BepInEx/BepInEx/releases). \
-**Make sure you use the x86 version!** RD is x86 so the x64 version of BepInEx will not work.
+1. Download the latest version of BepInEx 5 [here](https://github.com/BepInEx/BepInEx/releases). (Scroll down past the BepInEx 6 pre-release)
+    - **Make sure you use the correct architecture for your system!**
+      - If you are on a 32-bit version of Windows, select the x86 download.
+      - If you are on a 64-bit version of Windows, select the x64 download. 
+      - Otherwise, chose the unix download.
 2. Unzip the file into your RD folder. You should have a `winhttp.dll`, `doorstop_config.ini`, and `BepInEx` folder next to Rhythm Doctor.exe.
 3. Launch RD once to generate BepInEx files.
 4. Download the latest version of the mod from [here](https://github.com/huantianad/RDTweaks/releases). It should be named `RDTweaks vx.x.x.zip`.
